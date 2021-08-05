@@ -8,12 +8,21 @@ import json
 import sys
 from itertools import compress
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
     from typing import Optional, Sequence, Iterator, List, Dict
 
 import emily_symbols
+
+
+class Outline(NamedTuple):
+    starter: "str"
+    attachment: "str"
+    capitalization: "str"
+    variant: "str"
+    pattern: "str"
+    repititions: "str"
 
 
 def str_to_int(string: str) -> int:
@@ -45,7 +54,7 @@ for number in range(1 << len(pattern_keys)):
 # ]
 
 
-def generate_outlines() -> "Iterator[str]":
+def generate_outlines() -> "Iterator[Outline]":
     # vary uniqueStarters
     for starter in emily_symbols.symbols:
         # detect no custom symbols
@@ -65,7 +74,18 @@ def generate_outlines() -> "Iterator[str]":
 
                     for pattern in patterns:
                         for repititions in ["", "S", "T", "TS"]:
-                            yield f"{starter}{attachment}{'' if not (pattern or repititions) else capitalization}{variant}{pattern}{repititions}"
+                            yield Outline(
+                                starter=starter,
+                                attachment=attachment,
+                                capitalization=(
+                                    ""
+                                    if not (pattern or repititions)
+                                    else capitalization
+                                ),
+                                variant=variant,
+                                pattern=pattern,
+                                repititions=repititions,
+                            )
 
 
 key_to_number = str.maketrans(
@@ -118,7 +138,7 @@ def generate_dictionaries(
     "generates space and attachment dictionaries, with or without number embedding"
     space_dictionary = {}
     attachment_dictionary = {}
-    for outline in generate_outlines():
+    for outline in map("".join, generate_outlines()):
         if json_all or attachment_method == "space":
             emily_symbols.attachmentMethod = "space"
             try:
