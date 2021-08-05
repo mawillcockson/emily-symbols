@@ -1,4 +1,12 @@
+#!/usr/bin/env python
+"""
+generates json (and optionally RTF/CRE dictionaries, if sammdot/rtfcre is
+installed) stenographic dictionaries of Emily's system for use with
+openstenoproject/plover
+"""
+import argparse
 import json
+from argparse import Namespace
 from itertools import compress
 from pathlib import Path
 
@@ -68,14 +76,70 @@ def embed_numbers(outline: str) -> str:
         if any(key in left for key in set("WHRAO*-EUFR")):
             # right-hand P
             return outline.translate(key_to_number).replace("P", "7")
-        
+
         return outline.translate(key_to_number).replace("P", "3")
 
     else:
         raise ValueError(f"too many 'P's in outline '{outline}'")
 
 
+def parse_args(args: "Optional[Sequence[str]]" = None) -> "Namespace":
+    parser = argparse.ArgumentParser(
+        description=(
+            "generates json (and optionally RTF/CRE dictionaries, if sammdot/rtfcre is installed) "
+            "stenographic dictionaries of Emily's system for use with openstenoproject/plover"
+        )
+    )
+
+    regular_group = parser.add_argument_group(title="Regular")
+    regular_group.add_argument(
+        "--attachment-method",
+        dest="attachment_method",
+        action="store",
+        choices=["space", "attachment"],
+        default=emily_symbols.attachmentMethod,
+        help=f"whether the spacing symbols indicate which sides to put spaces on, or which sides to attach to (default is {emily_symbols.attachmentMethod})",
+    )
+    regular_group.add_argument(
+        "--rtfcre",
+        dest="rtfcre",
+        action="store_true",
+        default=False,
+        help="also generate RTF/CRE dictionaries",
+    )
+    regular_group.add_argument(
+        "--include-embedded-numbers",
+        dest="embed_numbers",
+        action="store_true",
+        default=False,
+        help="include duplicate entries for outlines with the numbers embedded (e.g. both #SKWH and 1KW4 are included)",
+    )
+    regular_group.add_argument(
+        "--directory",
+        dest="directory",
+        action="store",
+        default=".",
+        required=False,
+        help="directory to put generated dictionaries in (default is the current directory)",
+    )
+
+    ci_group = parser.add_argument_group(
+        title="CI", description="these override options in the Regular group"
+    )
+    ci_group.add_argument(
+        "--json-all",
+        dest="json_all",
+        action="store_true",
+        default=False,
+        help="generate all possible JSON dictionaries",
+    )
+
+    return parser.parse_args(args)
+
+
 if __name__ == "__main__":
+    args = parse_args()
+
     space_dictionary = {}
     attachment_dictionary = {}
     for outline in generate_combinations():
