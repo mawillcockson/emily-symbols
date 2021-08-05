@@ -66,7 +66,10 @@ def embed_numbers(outline: str) -> str:
     elif outline.count("P") == 1:
         left, _, right = outline.partition("P")
         if any(key in left for key in set("WHRAO*-EUFR")):
-            pass
+            # right-hand P
+            return outline.translate(key_to_number).replace("P", "7")
+        
+        return outline.translate(key_to_number).replace("P", "3")
 
     else:
         raise ValueError(f"too many 'P's in outline '{outline}'")
