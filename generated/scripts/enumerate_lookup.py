@@ -45,7 +45,7 @@ for number in range(1 << len(pattern_keys)):
 # ]
 
 
-def generate_combinations() -> "Iterator[str]":
+def generate_outlines() -> "Iterator[str]":
     # vary uniqueStarters
     for starter in emily_symbols.symbols:
         # detect no custom symbols
@@ -110,6 +110,50 @@ def embed_numbers(outline: str) -> str:
         raise ValueError(f"too many 'P's in outline '{outline}'")
 
 
+def generate_dictionaries(
+    attachment_method: "str" = emily_symbols.attachmentMethod,
+    include_embedded_numbers: "bool" = False,
+    json_all: "bool" = False,
+) -> "Dict[str, Dict[str, str]]":
+    "generates space and attachment dictionaries, with or without number embedding"
+    space_dictionary = {}
+    attachment_dictionary = {}
+    for outline in generate_outlines():
+        if json_all or attachment_method == "space":
+            emily_symbols.attachmentMethod = "space"
+            try:
+                space_dictionary[outline] = emily_symbols.lookup((outline,))
+            except KeyError:
+                pass
+
+            if json_all or include_embedded_numbers:
+                embedded_outline = embed_numbers(outline)
+                try:
+                    space_dictionary[embedded_outline] = emily_symbols.lookup(
+                        (embedded_outline,)
+                    )
+                except KeyError:
+                    pass
+
+        if json_all or attachment_method == "attachment":
+            emily_symbols.attachmentMethod = "attachment"
+            try:
+                attachment_dictionary[outline] = emily_symbols.lookup((outline,))
+            except KeyError:
+                pass
+
+            if json_all or include_embedded_numbers:
+                embedded_outline = embed_numbers(outline)
+                try:
+                    attachment_dictionary[embedded_outline] = emily_symbols.lookup(
+                        (embedded_outline,)
+                    )
+                except KeyError:
+                    pass
+
+    return {"space": space_dictionary, "attachment": attachment_dictionary}
+
+
 def parse_args(args: "Optional[Sequence[str]]" = None) -> "Dict[str, str]":
     "parses arguments"
     parser = argparse.ArgumentParser(
@@ -165,7 +209,7 @@ def parse_args(args: "Optional[Sequence[str]]" = None) -> "Dict[str, str]":
         help="generate all possible JSON dictionaries",
     )
 
-    return vars(parser.parse_args(args))
+    return vars(parser.parse_args(args))  # type: ignore
 
 
 def main() -> "None":
@@ -191,40 +235,13 @@ def main() -> "None":
             or attachment_dictionary_path.is_file()
         ), f"'{attachment_dictionary_path}' exists and is not a file"
 
-    space_dictionary = {}
-    attachment_dictionary = {}
-    for outline in generate_combinations():
-        if json_all or attachment_method == "space":
-            emily_symbols.attachmentMethod = "space"
-            try:
-                space_dictionary[outline] = emily_symbols.lookup((outline,))
-            except KeyError:
-                pass
-
-            if json_all or include_embedded_numbers:
-                embedded_outline = embed_numbers(outline)
-                try:
-                    space_dictionary[embedded_outline] = emily_symbols.lookup(
-                        (embedded_outline,)
-                    )
-                except KeyError:
-                    pass
-
-        if json_all or attachment_method == "attachment":
-            emily_symbols.attachmentMethod = "attachment"
-            try:
-                attachment_dictionary[outline] = emily_symbols.lookup((outline,))
-            except KeyError:
-                pass
-
-            if json_all or include_embedded_numbers:
-                embedded_outline = embed_numbers(outline)
-                try:
-                    attachment_dictionary[embedded_outline] = emily_symbols.lookup(
-                        (embedded_outline,)
-                    )
-                except KeyError:
-                    pass
+    dictionaries = generate_dictionaries(
+        attachment_method=attachment_method,
+        include_embedded_numbers=include_embedded_numbers,
+        json_all=json_all,
+    )
+    space_dictionary = dictionaries["space"]
+    attachment_dictionary = dictionaries["attachment"]
 
     if space_dictionary:
         space_dictonary_path.write_text(json.dumps(space_dictionary, indent=2))
