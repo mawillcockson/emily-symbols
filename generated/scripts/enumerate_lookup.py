@@ -4,6 +4,7 @@ generates json stenographic dictionaries of Emily's system for use with
 openstenoproject/plover
 """
 import argparse
+import importlib
 import json
 import sys
 from itertools import compress
@@ -11,9 +12,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
-    from typing import Optional, Sequence, Iterator, List, Dict, Tuple
+    from typing import Dict, Iterator, List, Optional, Sequence, Tuple
 
-import emily_symbols
+    import emily_symbols
+
+else:
+    sys.path.append(str(Path("../..").resolve(strict=True)))
+    emily_symbols = importlib.import_module("emily-symbols")
 
 
 class Outline(NamedTuple):
@@ -56,8 +61,8 @@ for number in range(1 << len(pattern_keys)):
 
 existing_patterns: "List[str]" = []
 for starter in emily_symbols.symbols:
-   for pattern in emily_symbols.symbols[starter]:
-       existing_patterns.append(pattern)
+    for pattern in emily_symbols.symbols[starter]:
+        existing_patterns.append(pattern)
 
 
 def generate_outlines(all_patterns: "bool" = False) -> "Iterator[Tuple[Outline, bool]]":
