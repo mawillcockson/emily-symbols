@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
-    from typing import Optional, Sequence, Iterator, List, Dict
+    from typing import Optional, Sequence, Iterator, List, Dict, Tuple
 
 import emily_symbols
 
@@ -34,7 +34,7 @@ def str_to_int(string: str) -> int:
 
 
 pattern_keys = "FRPBLG"
-patterns: "List[str]" = []
+every_pattern: "List[str]" = []
 for number in range(1 << len(pattern_keys)):
     # same as 2 ** len(pattern_keys)
 
@@ -45,16 +45,31 @@ for number in range(1 << len(pattern_keys)):
         else:
             selectors.append(0)
 
-    patterns.append("".join(compress(pattern_keys, selectors)))
+    every_pattern.append("".join(compress(pattern_keys, selectors)))
 
 # same as
-# patterns: "List[str]" = [
+# every_pattern: "List[str]" = [
 #     "".join(compress(pattern_keys, map(int, f"{x:0{len(pattern_keys)}b}")))
 #     for x in range(2 ** len(pattern_keys))
 # ]
 
 
-def generate_outlines() -> "Iterator[Outline]":
+existing_patterns: "List[str]" = []
+for starter in emily_symbols.symbols:
+   for pattern in emily_symbols.symbols[starter]:
+       existing_patterns.append(pattern)
+
+
+def generate_outlines(all_patterns: "bool" = False) -> "Iterator[Tuple[Outline, bool]]":
+    """
+    generates outlines as tuples of the components, and says whether they exist
+
+    only generates existing patterns, unless all_patterns is true, in which
+    case it generates all possible patterns of the the pattern keys (e.g.
+    FRPBLG)
+    """
+    patterns: "List[str]" = every_pattern if all_patterns else existing_patterns
+
     # vary uniqueStarters
     for starter in emily_symbols.symbols:
         # detect no custom symbols
@@ -73,18 +88,23 @@ def generate_outlines() -> "Iterator[Outline]":
                         capitalization = ""
 
                     for pattern in patterns:
+                        pattern_exists = pattern in existing_patterns
+
                         for repititions in ["", "S", "T", "TS"]:
-                            yield Outline(
-                                starter=starter,
-                                attachment=attachment,
-                                capitalization=(
-                                    ""
-                                    if not (pattern or repititions)
-                                    else capitalization
+                            yield (
+                                Outline(
+                                    starter=starter,
+                                    attachment=attachment,
+                                    capitalization=(
+                                        ""
+                                        if not (pattern or repititions)
+                                        else capitalization
+                                    ),
+                                    variant=variant,
+                                    pattern=pattern,
+                                    repititions=repititions,
                                 ),
-                                variant=variant,
-                                pattern=pattern,
-                                repititions=repititions,
+                                pattern_exists,
                             )
 
 
@@ -138,7 +158,9 @@ def generate_dictionaries(
     "generates space and attachment dictionaries, with or without number embedding"
     space_dictionary = {}
     attachment_dictionary = {}
-    for outline in map("".join, generate_outlines()):
+    for outline_tuple, _ in generate_outlines():
+        outline = "".join(outline_tuple)
+
         if json_all or attachment_method == "space":
             emily_symbols.attachmentMethod = "space"
             try:
