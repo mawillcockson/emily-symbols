@@ -1,0 +1,19 @@
+# The format of this file is described in
+# https://flit.readthedocs.io/en/latest/pyproject_toml.html
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "emily-symbols"
+authors = [{name = "Emily Easteal", email = "emily@easteal.dev"}]
+readme = "README.md"
+dynamic = ["version", "description"]
+requires-python = ">=3.7,<4"
+keywords = ["plover"]
+
+[tool.flit.module]
+name = "emily_symbols"
+
+[project.urls]
+Home = "https://github.com/EPLHREU/emily-symbols"
