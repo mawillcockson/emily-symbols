@@ -1,3 +1,11 @@
+"""
+Plover dictionary for typing symbols while specifying spacing and capitalization
+"""
+
+# NOTE: The version was chosen arbitrarily
+# GitHub lists 46 commits so far
+__version__ = "0.0.46"
+
 # Emily's Symbol Dictionary
 import re
 
