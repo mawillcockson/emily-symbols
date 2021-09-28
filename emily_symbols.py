@@ -161,3 +161,104 @@ def lookup(chord):
 
     # all done :D
     return output
+
+
+variant_selectors = ["", "E", "U", "EU"]
+reverse_symbols: "Dict[str, Tuple[str, str]]" = {}
+for starter in symbols:
+    for symbol_outline in symbols[starter]:
+        variants_or_translation = symbols[starter][symbol_outline]
+        if not isinstance(variants_or_translation, str):
+            variants = variants_or_translation
+            for index, translation in enumerate(variants):
+                reverse_symbols[translation] = (starter, variant_selectors[index], symbol_outline)
+        else:
+            translation = variants_or_translation
+            reverse_symbols[translation] = (starter, "", symbol_outline)
+
+possible_selections = "|".join(filter(None, map(re.escape, reverse_symbols)))
+selection_re = re.compile(fr"(?P<selection>{possible_selections}){{1,4}}")
+
+
+def removeprefix(string: str, prefix: str) -> str:
+    "removes prefix from the beginning of string"
+    if string.startswith(prefix):
+        return string[len(prefix):]
+    return string[:]
+
+
+def removesuffix(string: str, suffix: str) -> str:
+    "removes suffix from the end of string"
+    if string.endswith(suffix):
+        return string[:-len(suffix)]
+    return string[:]
+
+
+def reverse_lookup(output: str) -> "List[Tuple[str]]":
+    """
+    find outlines that, if given to lookup(), produce the output
+    """
+    capitalise = False
+    left_attach = False
+    right_attach = False
+
+    capitalise_next_word = "{-|}"
+    reset_formatting = "{}"
+    attach = "{^}"
+
+    if output.endswith(capitalise_next_word):
+        capitalise = True
+        output = removesuffix(output, capitalise_next_word)
+
+    if attachmentMethod == "space":
+        left_attach = output.startswith(reset_formatting)
+        output = removeprefix(output, reset_formatting)
+        output = removeprefix(output, attach)
+        right_attach = output.endswith(reset_formatting)
+        output = removesuffix(output, reset_formatting)
+        output = removesuffix(output, attach)
+    else:
+        left_attach = output.startswith(attach)
+        output = removeprefix(output, attach)
+        right_attach = output.endswith(attach)
+        output = removesuffix(output, attach)
+
+    output = output.strip()
+
+    if output == "":
+        selection = output
+        selection_count = 1
+
+    else:
+        match = selection_re.fullmatch(output)
+        if not match:
+            return []
+        selection = match["selection"]
+        selection_count = output.count(selection)
+
+    (starter, variants, pattern) = reverse_symbols[selection]
+    attachments = ""
+    if left_attach:
+        attachments += "A"
+    if right_attach:
+        attachments += "O"
+
+    if capitalise:
+        capitalisation = "*"
+    else:
+        capitalisation = "-"
+
+    repeat_keys = {
+        1: "",
+        2: "S",
+        3: "T",
+        4: "TS",
+    }
+    repetitions = repeat_keys[selection_count]
+
+    stroke = "".join([starter, attachments, capitalisation, variants, pattern, repetitions])
+
+    if any((character in stroke) for character in "AO*EU") or stroke == starter + attachments + "-":
+        stroke = stroke.replace("-", "")
+
+    return [(stroke,)]
